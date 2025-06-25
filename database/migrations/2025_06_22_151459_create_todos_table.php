@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('is_done')->default(false);
             $table->date('due_date')->nullable();
             $table->timestamp('created_at');
+            $table->timestamp('updated_at');
         });
     }
 

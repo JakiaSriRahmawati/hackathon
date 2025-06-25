@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->date('date_of_birth')->nullable();
+        Schema::table('todos', function (Blueprint $table) {
+            $table->string('photo_path')->nullable();
+            $table->string('caption')->nullable();
         });
     }
 
@@ -21,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('todos', function (Blueprint $table) {
             //
         });
     }

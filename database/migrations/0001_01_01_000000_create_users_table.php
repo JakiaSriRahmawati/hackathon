@@ -19,7 +19,10 @@ return new class extends Migration
         $table->text('profile_picture')->nullable();
         $table->text('bio')->nullable();
         $table->string('google_id')->nullable();
+        $table->timestamp('email_verified_at')->nullable();
         $table->timestamps();
+        $table->rememberToken();
+
     });
 
     Schema::create('password_reset_tokens', function (Blueprint $table) {
