@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Todo extends Model
 {
-    protected $fillable = ['user_id', 'title', 'description', 'is_done', 'due_date'];
+    protected $fillable = ['user_id', 'title', 'description', 'is_done', 'due_date', 'photo_path', 'caption'];
 
     public function user()
     {
