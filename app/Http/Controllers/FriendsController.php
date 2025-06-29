@@ -94,7 +94,7 @@ class FriendsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(friends $friends)
+    public function destroy(friend $friends)
     {
         //
     }
