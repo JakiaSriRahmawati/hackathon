@@ -6,17 +6,22 @@ use App\Models\Goal;
 use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Log;
 
 class TodoController extends Controller
 {
     public function index(Request $request)
     {
         $todos = Todo::with('user')
-            ->select('id', 'user_id', 'title', 'created_at')
+            ->select('id', 'user_id', 'title', 'created_at', 'photo_path')
             ->get()
             ->map(function ($item) {
                 $item->type = 'todo';
+                if ($item->photo_path) {
+                    $item->photo_path = url($item->photo_path); // atau asset()
+                }
                 return $item;
             })
             ->values();
@@ -55,62 +60,24 @@ class TodoController extends Controller
         ]);
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'photo_path' => 'nullable|string', // diganti dari 'photo'
+            'photo_path' => 'nullable|string',
             'caption' => 'nullable|string|max:255',
         ]);
-
-        // Simpan path foto jika ada
-        $photoPath = null;
-        if ($request->photo_path) {
-            $base64Image = $request->photo_path;
-
-            // Pastikan formatnya benar
-            if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                $image = substr($base64Image, strpos($base64Image, ',') + 1);
-                $image = base64_decode($image);
-
-                if ($image === false) {
-                    return response()->json(['message' => 'Gagal decode base64'], 400);
-                }
-
-                $extension = strtolower($type[1]); // jpg, png, gif, etc
-
-                if (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
-                    return response()->json(['message' => 'Format gambar tidak didukung'], 400);
-                }
-
-                $fileName = 'photo_' . time() . '.' . $extension;
-                $photoPath = 'photos/' . $fileName;
-
-                // Simpan ke storage/app/public/photos
-                \Storage::disk('public')->put($photoPath, $image);
-            } else {
-                return response()->json(['message' => 'Format base64 tidak valid'], 400);
-            }
-        }
 
         $todo = \App\Models\Todo::create([
             'title' => $request->title,
             'description' => $request->description,
             'user_id' => $request->user()->id,
-            'photo_path' => $photoPath, // tetap pakai field ini untuk disimpan di DB
             'caption' => $request->caption,
             'created_at' => \Carbon\Carbon::now()
         ]);
@@ -121,72 +88,81 @@ class TodoController extends Controller
         ]);
     }
 
-
-    // public function store(Request $request)
-    // {
-    //     // return 123;
-    //     $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'description' => 'nullable|string',
-    //         // 'user_id' => 'required|exists:users,id',
-    //         'photo' => 'nullable|image|max:2048', 
-    //         'caption' => 'nullable|string|max:255', 
-    //     ]);
-
-    //     // Simpan path foto jika ada
-    //     $photoPath = null;
-    //     if ($request->hasFile('photo')) {
-    //         $photoPath = $request->file('photo')->store('public/photos');
-    //     }
-
-    //     $todo = \App\Models\Todo::create([
-    //         'title' => $request->title,
-    //         'description' => $request->description,
-    //         // 'user_id' => Auth::user()->id,
-    //         'user_id' =>  1,
-    //         'photo_path' => $photoPath,
-    //         'caption' => $request->caption,
-    //         'created_at' => \Carbon\Carbon::now()
-    //     ]);
-
-    //     return response()->json([
-    //         'message' => 'Todo berhasil dibuat.',
-    //         'todo' => $todo,
-    //     ]);
-    // }
-
-
-
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Request $request)
     {
-        //
+        $todos = Todo::where('user_id', $request->user()->id)->get();
+
+        return response()->json([
+            'message' => 'Todo berhasil ditampilkan',
+            'todos' => $todos
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+
+    public function edit(Request $request, string $id)
     {
-        //
+        if (!$request->hasFile('photo')) {
+            return response()->json([
+                'message' => 'File photo tidak ditemukan',
+                'received_keys' => array_keys($request->all())
+            ], 400);
+        }
+        try {
+            $request->validate([
+                'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            ]);
+
+            $todo = Todo::where('id', $id)
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
+            // Simpan file
+            $path = $request->file('photo')->store('todo_photos', 'public');
+
+            $todo->update([
+                'photo_path' => Storage::url($path),
+                'is_done' => true,
+            ]);
+
+            return response()->json([
+                'message' => 'Todo berhasil diupdate',
+                'data' => $todo
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal update Todo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        //
+        try {
+            $todo = Todo::where('id', $id)
+                        ->where('user_id', $request->user()->id)
+                        ->firstOrFail();
+
+            // Hapus file jika ada
+            if ($todo->photo_path) {
+                $path = str_replace('/storage/', 'public/', $todo->photo_path);
+                Storage::delete($path);
+            }
+
+            $todo->delete();
+
+            return response()->json([
+                'message' => 'Todo berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal menghapus todo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -55,9 +55,14 @@ class GoalsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(goals $goals)
+    public function show(Request $request)
     {
-        //
+        $goals = Goal::where('user_id', $request->user()->id)->get();
+
+        return response()->json([
+            'message' => 'Goals berhasil ditampilkan',
+            'goals' => $goals
+        ]);
     }
 
     /**
@@ -79,8 +84,24 @@ class GoalsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(goals $goals)
+    public function destroy(Request $request, string $id)
     {
-        //
+        try {
+            $goal = Goal::where('id', $id)
+                        ->where('user_id', $request->user()->id)
+                        ->firstOrFail();
+           
+
+            $goal->delete();
+
+            return response()->json([
+                'message' => 'goal berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal menghapus todo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
