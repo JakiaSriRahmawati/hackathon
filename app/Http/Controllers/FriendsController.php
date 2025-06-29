@@ -15,6 +15,7 @@ class FriendsController extends Controller
         //
     }
 
+    
     /**
      * Show the form for creating a new resource.
      */
@@ -28,7 +29,7 @@ class FriendsController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        
     }
 
     /**
@@ -62,4 +63,6 @@ class FriendsController extends Controller
     {
         //
     }
+
+    
 }
