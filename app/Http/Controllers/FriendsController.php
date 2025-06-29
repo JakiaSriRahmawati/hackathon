@@ -2,56 +2,91 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\friends;
+use App\Models\Friend;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 
 class FriendsController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    // Lihat daftar teman (yang sudah accepted)
     public function index()
     {
-        //
+        $userId = auth()->id();
+
+        $friends = Friend::where(function ($query) use ($userId) {
+            $query->where('user_id', $userId)
+                  ->orWhere('friend_id', $userId);
+        })->where('status', 'accepted')->get();
+
+        return response()->json($friends);
     }
 
-    
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    // Kirim permintaan teman
     public function store(Request $request)
     {
-        
+        try {
+            $validator = Validator::make($request->all(), [
+                'friend_id' => [
+                    'required',
+                    'integer',
+                    'exists:users,id',
+                    function ($attribute, $value, $fail) {
+                        if ($value == auth()->id()) {
+                            $fail('You cannot send a friend request to yourself.');
+                        }
+                    },
+                ],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $friendId = $request->input('friend_id');
+
+            // Cek apakah permintaan sudah pernah dikirim
+            $existing = Friend::where('user_id', auth()->id())
+                ->where('friend_id', $friendId)
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'message' => 'Friend request already sent or exists'
+                ], 400);
+            }
+
+            // Simpan data permintaan pertemanan baru
+            $friend = Friend::create([
+                'user_id' => auth()->id(),
+                'friend_id' => $friendId,
+                'status' => 'pending',
+            ]);
+
+            return response()->json([
+                'message' => 'Friend request sent',
+                'data' => $friend
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(friends $friends)
+
+    // Tampilkan detail
+    public function show(Friend $friend)
     {
-        //
+        return response()->json($friend);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(friends $friends)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, friends $friends)
+    // Terima / Tolak permintaan
+    public function update(Request $request, Friend $friend)
     {
         //
     }
@@ -63,6 +98,4 @@ class FriendsController extends Controller
     {
         //
     }
-
-    
 }
