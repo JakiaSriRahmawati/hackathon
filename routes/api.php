@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\FriendsController;
 use App\Http\Controllers\GoalsController;
 use App\Http\Controllers\TodoController;
@@ -11,6 +12,7 @@ require __DIR__ . '/api/user.php';
 
 
 Route::get('/beranda', [TodoController::class, 'index']);
+Route::get('/search', [UserController::class, 'search']);
 
 Route::middleware('auth:api')->group(function () {
     
