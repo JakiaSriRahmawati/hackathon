@@ -2,17 +2,59 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Goal;
 use App\Models\Todo;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TodoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $todos = Todo::all(); // ambil semua data dari tabel todo
-        return response()->json($todos);
+        $todos = Todo::with('user')
+            ->select('id', 'user_id', 'title', 'created_at')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'todo';
+                return $item;
+            })
+            ->values();
+
+        $goals = Goal::with('user')
+            ->select('id', 'user_id', 'title', 'created_at')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'goal';
+                return $item;
+            })
+            ->values();
+
+        $merged = $todos->concat($goals)
+            ->sortByDesc(fn($item) => $item->created_at ?? now())
+            ->values();
+
+        $page = $request->get('page', 1);
+        $perPage = 10;
+
+        $paginated = new LengthAwarePaginator(
+            $merged->forPage($page, $perPage),
+            $merged->count(),
+            $perPage,
+            $page,
+            ['path' => url()->current()]
+        );
+
+        return response()->json([
+            'pagination' => $paginated,
+            'debug' => [
+                'todo_count' => $todos->count(),
+                'goal_count' => $goals->count(),
+                'merged_count' => $merged->count()
+            ]
+        ]);
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -67,7 +109,7 @@ class TodoController extends Controller
         $todo = \App\Models\Todo::create([
             'title' => $request->title,
             'description' => $request->description,
-            'user_id' => 1,
+            'user_id' => $request->user()->id,
             'photo_path' => $photoPath, // tetap pakai field ini untuk disimpan di DB
             'caption' => $request->caption,
             'created_at' => \Carbon\Carbon::now()
