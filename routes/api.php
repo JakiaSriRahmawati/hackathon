@@ -13,6 +13,14 @@ require __DIR__ . '/api/user.php';
 Route::get('/beranda', [TodoController::class, 'index']);
 
 Route::middleware('auth:api')->group(function () {
+    
+    Route::get('friends', [FriendsController::class, 'index']);
+    Route::post('friends', [FriendsController::class, 'store']);
+    Route::put('friends/accept-request/{id}', [FriendsController::class, 'accept_request']);
+    Route::get('friends/request', [FriendsController::class, 'requesting_friends']);
+    
+    // Route::apiResource('friends', FriendsController::class);
+    // todo & goals
     Route::get('/todos', [TodoController::class, 'show']);
     Route::post('/todos', [TodoController::class, 'store']);
     Route::delete('/todos/{id}', [TodoController::class, 'destroy']);
@@ -20,5 +28,4 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/goals', [GoalsController::class, 'show']);
     Route::post('/goals', [GoalsController::class, 'store']);
     Route::delete('/goals/{id}', [GoalsController::class, 'destroy']);
-    Route::apiResource('friends', FriendsController::class);
 });

@@ -66,22 +66,6 @@ class GoalsController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(goals $goals)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, goals $goals)
-    {
-        //
-    }
-
-    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Request $request, string $id)

@@ -5,33 +5,49 @@ namespace App\Http\Controllers;
 use App\Models\Friend;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
 
 class FriendsController extends Controller
 {
     // Lihat daftar teman (yang sudah accepted)
-    public function index()
+    public function index(Request $request)
     {
-        $userId = auth()->id();
+        $userId = $request->user()->id;
 
         $friends = Friend::where(function ($query) use ($userId) {
             $query->where('user_id', $userId)
                   ->orWhere('friend_id', $userId);
-        })->where('status', 'accepted')->get();
-
-        return response()->json($friends);
+        })
+        ->where('status', 'accepted')
+        ->with(['requester', 'receiver'])
+        ->get()
+        ->map(function ($friend) use ($userId) {
+            // Ambil data teman yang bukan dirinya sendiri
+            return $friend->user_id == $userId
+                ? $friend->receiver
+                : $friend->requester;
+        });
+    
+        return response()->json([
+            'message' => 'Daftar teman berhasil ditampilkan',
+            'friends' => $friends
+        ]);
     }
 
     // Kirim permintaan teman
     public function store(Request $request)
     {
         try {
+            $userId = $request->user()->id;
+
             $validator = Validator::make($request->all(), [
                 'friend_id' => [
                     'required',
                     'integer',
                     'exists:users,id',
-                    function ($attribute, $value, $fail) {
-                        if ($value == auth()->id()) {
+                    function ($attribute, $value, $fail) use ($userId) {
+                        if ($value == $userId) {
                             $fail('You cannot send a friend request to yourself.');
                         }
                     },
@@ -48,7 +64,7 @@ class FriendsController extends Controller
             $friendId = $request->input('friend_id');
 
             // Cek apakah permintaan sudah pernah dikirim
-            $existing = Friend::where('user_id', auth()->id())
+            $existing = Friend::where('user_id', $request->user()->id)
                 ->where('friend_id', $friendId)
                 ->first();
 
@@ -60,7 +76,7 @@ class FriendsController extends Controller
 
             // Simpan data permintaan pertemanan baru
             $friend = Friend::create([
-                'user_id' => auth()->id(),
+                'user_id' => $request->user()->id,
                 'friend_id' => $friendId,
                 'status' => 'pending',
             ]);
@@ -90,12 +106,52 @@ class FriendsController extends Controller
     {
         //
     }
+    
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(friends $friends)
+    public function requesting_friends(Request $request)
     {
-        //
+        $friends = Friend::where('friend_id', $request->user()->id)
+            ->where('status', 'pending')
+            ->with('requester') // ← ambil data pengirim (user_id)
+            ->get()
+            ->map(function ($friend) {
+                return [
+                    'id' => $friend->id,
+                    'user_id' => $friend->user_id,
+                    'requester_name' => $friend->requester->name,
+                    'requester_email' => $friend->requester->email,
+                    'status' => $friend->status,
+                    'created_at' => $friend->created_at,
+                ];
+            });
+
+        return response()->json([
+            'message' => 'Daftar teman yang pending berhasil ditampilkan',
+            'friends' => $friends
+        ]);
+    }
+
+
+    public function accept_request(Request $request, string $id)
+    {
+        try {
+            $friend = Friend::where('id', $id)
+                ->where('friend_id', $request->user()->id)
+                ->where('status', 'pending')
+                ->firstOrFail();
+    
+            $friend->status = 'accepted';
+            $friend->save();
+    
+            return response()->json([
+                'message' => 'Permintaan teman diterima',
+                'data' => $friend
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
