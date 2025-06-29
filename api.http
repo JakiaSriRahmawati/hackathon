@@ -1,0 +1,30 @@
+@baseUrl = http://localhost:8000/api
+@bearerToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvYXBpL2xvZ2luIiwiaWF0IjoxNzUxMTc4OTQwLCJleHAiOjE3NTExODI1NDAsIm5iZiI6MTc1MTE3ODk0MCwianRpIjoiUEhubFI1Wm0ydGwzd1dNeiIsInN1YiI6IjEiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.qeGXWCzvYPXxGEwEtvkNtkTXLGifpUati2zOzp-NNw8
+
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "test@example.com",
+    "password": "123"
+}
+
+
+### Base URL and Bearer Token (Reusable Variables)
+
+### Test: Kirim permintaan pertemanan (POST /friend)
+POST {{baseUrl}}/friends
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "friend_id": 1    
+}
+
+### Test: Lihat daftar teman (GET /friend)
+GET {{baseUrl}}/friend
+Authorization: Bearer {{bearerToken}}
+Accept: application/json

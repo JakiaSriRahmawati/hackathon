@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Friend;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class FriendsController extends Controller
 {
@@ -27,14 +28,7 @@ class FriendsController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'friend_id' => [
-                    'required',
-                    'integer',
-                    'exists:users,id',
-                    function ($attribute, $value, $fail) {
-                        if ($value == auth()->id()) {
-                            $fail('You cannot send a friend request to yourself.');
-                        }
-                    },
+                    'required'
                 ],
             ]);
 
@@ -48,7 +42,7 @@ class FriendsController extends Controller
             $friendId = $request->input('friend_id');
 
             // Cek apakah permintaan sudah pernah dikirim
-            $existing = Friend::where('user_id', auth()->id())
+            $existing = Friend::where('user_id', Auth::id())
                 ->where('friend_id', $friendId)
                 ->first();
 
@@ -60,7 +54,7 @@ class FriendsController extends Controller
 
             // Simpan data permintaan pertemanan baru
             $friend = Friend::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'friend_id' => $friendId,
                 'status' => 'pending',
             ]);
