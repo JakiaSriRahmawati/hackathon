@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('todos', function (Blueprint $table) {
-            $table->timestamp('updated_at')->nullable()->after('created_at');
+            // Check if column doesn't exist before adding
+            if (!Schema::hasColumn('todos', 'updated_at')) {
+                $table->timestamp('updated_at')->nullable()->after('created_at');
+            }
         });
     }
 
