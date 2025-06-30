@@ -50,7 +50,16 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->only(['email', 'password']);
+        $login = $request->input('login'); // bisa email atau username
+        $password = $request->input('password');
+
+        // Cek apakah input login adalah email atau username
+        $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        $credentials = [
+            $fieldType => $login,
+            'password' => $password
+        ];
 
         try {
             if (!$token = JWTAuth::attempt($credentials)) {
@@ -73,5 +82,6 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
 
 }
