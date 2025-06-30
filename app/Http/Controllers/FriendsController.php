@@ -14,7 +14,7 @@ class FriendsController extends Controller
     // Lihat daftar teman (yang sudah accepted)
     public function index(Request $request)
     {
-        $userId = $request->user()->id;
+        $userId = Auth::id();
 
         $friends = Friend::where(function ($query) use ($userId) {
             $query->where('user_id', $userId)
@@ -97,10 +97,11 @@ class FriendsController extends Controller
 
 
     // Tampilkan detail
-    public function show(Friend $friend)
+     public function show(Friend $friend)
     {
         return response()->json($friend);
     }
+
 
     // Terima / Tolak permintaan
     public function update(Request $request, Friend $friend)

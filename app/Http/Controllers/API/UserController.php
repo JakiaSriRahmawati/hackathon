@@ -7,7 +7,7 @@ use App\Models\Todo;
 use App\Models\User;
 use App\Models\Friend;
 use Illuminate\Http\Request;
-use PhpParser\Node\Stmt\TryCatch;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 
 class UserController extends Controller
@@ -144,4 +144,30 @@ class UserController extends Controller
         return response()->json($users);
     }
 
+
+    // Fungsi upload profile picture
+    public function uploadProfilePicture(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        // Hapus gambar lama jika ada
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+        }
+
+        // Simpan gambar baru
+        $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+
+        $user->profile_picture = $path;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Profile picture uploaded successfully.',
+            'profile_picture_url' => asset('storage/' . $path),
+        ]);
+    }
 }
