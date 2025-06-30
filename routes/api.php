@@ -14,7 +14,7 @@ require __DIR__ . '/api/user.php';
 Route::get('/beranda', [TodoController::class, 'index']);
 Route::get('/search', [UserController::class, 'search']);
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('api.auth')->group(function () {
     
     Route::get('friends', [FriendsController::class, 'index']);
     Route::post('friends', [FriendsController::class, 'store']);
