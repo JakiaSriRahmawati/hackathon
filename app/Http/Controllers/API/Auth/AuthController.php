@@ -50,7 +50,7 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $login = $request->input('login'); // bisa email atau username
+        $login = $request->input('login');
         $password = $request->input('password');
 
         // Cek apakah input login adalah email atau username
