@@ -57,11 +57,14 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Invalid credentials'], 401);
             }
 
+            $user = Auth::user();
+
             return response()->json([
                 'message' => 'Login successful',
                 'token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => JWTAuth::factory()->getTTL() * 60
+                'expires_in' => JWTAuth::factory()->getTTL() * 60,
+                'user' => $user
             ]);
         } catch (\Throwable $e) {
             return response()->json([
@@ -70,4 +73,5 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
 }
