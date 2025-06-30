@@ -90,7 +90,18 @@ class TodoController extends Controller
 
     public function show(Request $request)
     {
-        $todos = Todo::where('user_id', $request->user()->id)->get();
+
+        $todos = Todo::with('user')
+            ->where('user_id', $request->user()->id)
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'todo';
+                if ($item->photo_path) {
+                    $item->photo_path = url($item->photo_path); // atau asset()
+                }
+                return $item;
+            })
+            ->values();
 
         return response()->json([
             'message' => 'Todo berhasil ditampilkan',
